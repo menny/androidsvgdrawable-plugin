@@ -183,6 +183,13 @@ public class SvgDrawableMavenPlugin extends AbstractMojo implements SvgDrawableP
     @Parameter(defaultValue = "-1")
     private int jpgBackgroundColor;
 
+    /**
+     * If set (to non-empty value), the SVG will first be resize to the size
+     * defined. E.g, "1024x500".
+     */
+    @Parameter
+    private String initialResize;
+
     public void execute() {
         final SvgDrawablePlugin plugin = new SvgDrawablePlugin(this, new MavenLogger(getLog()));
         plugin.execute();
@@ -262,6 +269,11 @@ public class SvgDrawableMavenPlugin extends AbstractMojo implements SvgDrawableP
     @Override
     public BoundsType getSvgBoundsType() {
         return svgBoundsType;
+    }
+
+    @Override
+    public String getInitialResize() {
+        return initialResize;
     }
 
 }

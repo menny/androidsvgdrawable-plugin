@@ -24,6 +24,8 @@ public class TestParameters implements SvgDrawablePlugin.Parameters {
     // type
     public OutputType outputType = DEFAULT_OUTPUT_TYPE;
 
+    private String initialResize = "";
+
     // format
     public OutputFormat outputFormat = DEFAULT_OUTPUT_FORMAT;
     public int jpgQuality = DEFAULT_JPG_QUALITY;
@@ -107,4 +109,8 @@ public class TestParameters implements SvgDrawablePlugin.Parameters {
         return outputType;
     }
 
+    @Override
+    public String getInitialResize() {
+        return initialResize;
+    }
 }

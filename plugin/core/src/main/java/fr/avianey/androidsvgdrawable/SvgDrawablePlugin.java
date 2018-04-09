@@ -15,34 +15,6 @@
  */
 package fr.avianey.androidsvgdrawable;
 
-import com.google.common.annotations.VisibleForTesting;
-import com.google.gson.GsonBuilder;
-import com.google.gson.reflect.TypeToken;
-import fr.avianey.androidsvgdrawable.NinePatch.Zone;
-import fr.avianey.androidsvgdrawable.util.Log;
-import fr.avianey.androidsvgdrawable.util.QualifiedResourceFilter;
-import org.apache.batik.transcoder.TranscoderException;
-import org.apache.batik.transcoder.TranscoderInput;
-import org.apache.batik.transcoder.TranscoderOutput;
-import org.apache.batik.transcoder.image.ImageTranscoder;
-import org.apache.batik.transcoder.image.JPEGTranscoder;
-import org.apache.commons.io.FilenameUtils;
-import org.xml.sax.SAXException;
-
-import javax.annotation.Nullable;
-import javax.imageio.ImageIO;
-import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.transform.TransformerException;
-import javax.xml.xpath.XPathExpressionException;
-import java.awt.*;
-import java.awt.image.BufferedImage;
-import java.io.*;
-import java.lang.reflect.Type;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.EnumSet;
-import java.util.Set;
-
 import static com.google.common.base.Joiner.on;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static fr.avianey.androidsvgdrawable.util.Constants.MM_PER_INCH;
@@ -52,11 +24,54 @@ import static java.lang.Math.max;
 import static java.lang.Math.min;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
-import static org.apache.batik.transcoder.SVGAbstractTranscoder.*;
+import static org.apache.batik.transcoder.SVGAbstractTranscoder.KEY_HEIGHT;
+import static org.apache.batik.transcoder.SVGAbstractTranscoder.KEY_PIXEL_UNIT_TO_MILLIMETER;
+import static org.apache.batik.transcoder.SVGAbstractTranscoder.KEY_WIDTH;
 import static org.apache.batik.transcoder.image.ImageTranscoder.KEY_BACKGROUND_COLOR;
 import static org.apache.batik.transcoder.image.JPEGTranscoder.KEY_QUALITY;
 import static org.apache.commons.io.FileUtils.listFiles;
 import static org.apache.commons.io.filefilter.TrueFileFilter.INSTANCE;
+
+import com.google.common.annotations.VisibleForTesting;
+import com.google.gson.GsonBuilder;
+import com.google.gson.reflect.TypeToken;
+import fr.avianey.androidsvgdrawable.NinePatch.Zone;
+import fr.avianey.androidsvgdrawable.util.Log;
+import fr.avianey.androidsvgdrawable.util.QualifiedResourceFilter;
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.Graphics;
+import java.awt.Rectangle;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.Reader;
+import java.lang.reflect.Type;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.EnumSet;
+import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import javax.annotation.Nullable;
+import javax.imageio.ImageIO;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.TransformerException;
+import javax.xml.xpath.XPathExpressionException;
+import org.apache.batik.transcoder.TranscoderException;
+import org.apache.batik.transcoder.TranscoderInput;
+import org.apache.batik.transcoder.TranscoderOutput;
+import org.apache.batik.transcoder.image.ImageTranscoder;
+import org.apache.batik.transcoder.image.JPEGTranscoder;
+import org.apache.commons.io.FilenameUtils;
+import org.xml.sax.SAXException;
 
 /**
  * Generates drawable from Scalable Vector Graphics (SVG) files.
@@ -111,6 +126,7 @@ public class SvgDrawablePlugin {
 
         BoundsType getSvgBoundsType();
 
+        String getInitialResize();
     }
 
     // log
@@ -219,6 +235,9 @@ public class SvgDrawablePlugin {
                     }
                     if (destination.exists()) {
                         getLog().debug("+ transcoding " + svg.getName() + " into " + destination.getName());
+                        if (!parameters.getInitialResize().isEmpty()) {
+                            svg.getBounds().setSize(asDimension(parameters.getInitialResize()));
+                        }
                         transcode(svg, d, destination, ninePatch);
                     } else {
                         getLog().info("Qualified output " + destination.getName() + " does not exists. " +
@@ -227,9 +246,19 @@ public class SvgDrawablePlugin {
                 }
             } catch (Exception e) {
                 getLog().error("Error while converting " + svg, e);
-			}
+            }
         }
 
+    }
+
+    private Dimension asDimension(final String initialResize) {
+        final Pattern sizePattern = Pattern.compile("^(\\d+)x(\\d+)$");
+        final Matcher matcher = sizePattern.matcher(initialResize);
+        if (matcher.matches()) {
+            return new Dimension(Integer.parseInt(matcher.group(1)), Integer.parseInt(matcher.group(2)));
+        } else {
+            throw new IllegalArgumentException("The value of initialResize should be '[width-as-integer]x[height-as-integer]'. For example: '1024x512'. '" + initialResize + "' is invalid");
+        }
     }
 
     /**

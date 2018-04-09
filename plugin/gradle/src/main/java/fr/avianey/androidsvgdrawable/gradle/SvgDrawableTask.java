@@ -62,6 +62,8 @@ public class SvgDrawableTask extends DefaultTask implements SvgDrawablePlugin.Pa
     // deprecated
     public BoundsType svgBoundsType = DEFAULT_BOUNDS_TYPE;
 
+    public String initialResize = "";
+
     @Override
     public Task configure(Closure closure) {
         Task task = super.configure(closure);
@@ -162,6 +164,11 @@ public class SvgDrawableTask extends DefaultTask implements SvgDrawablePlugin.Pa
         return svgBoundsType;
     }
 
+    @Override
+    public String getInitialResize() {
+        return initialResize;
+    }
+
     public void setFrom(FileCollection from) {
         this.from = from;
     }
@@ -222,4 +229,7 @@ public class SvgDrawableTask extends DefaultTask implements SvgDrawablePlugin.Pa
         this.svgBoundsType = svgBoundsType;
     }
 
+    public void setInitialResize(String initialResize) {
+        this.initialResize = initialResize;
+    }
 }
